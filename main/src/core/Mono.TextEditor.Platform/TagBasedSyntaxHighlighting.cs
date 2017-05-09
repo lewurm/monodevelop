@@ -23,13 +23,14 @@ using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Utilities;
+using Microsoft.VisualStudio.Text.Editor;
 
 namespace Microsoft.VisualStudio.Platform
 {
     [Export(typeof(ITagBasedSyntaxHighlightingFactory))]
     internal sealed class TagBasedSyntaxHighlightingFactory : ITagBasedSyntaxHighlightingFactory {
-        public ISyntaxHighlighting CreateSyntaxHighlighting (ITextBuffer textBuffer) {
-            return new TagBasedSyntaxHighlighting(textBuffer);
+        public ISyntaxHighlighting CreateSyntaxHighlighting (ITextView textView) {
+            return new TagBasedSyntaxHighlighting(textView);
         }
     }
 
@@ -37,11 +38,12 @@ namespace Microsoft.VisualStudio.Platform
     {
         private ITextBuffer textBuffer { get; }
         private IClassifier classifier { get; set; }
+        private MonoDevelop.Ide.Editor.ITextDocument textDocument { get; }
 
-        internal TagBasedSyntaxHighlighting(ITextBuffer textBuffer)
+        internal TagBasedSyntaxHighlighting(ITextView textView)
         {
-            this.textBuffer = textBuffer;
-
+            this.textBuffer = textView.TextBuffer;
+            this.textDocument = textView.GetTextEditor();
         }
 
         public Task<HighlightedLine> GetHighlightedLineAsync(IDocumentLine line, CancellationToken cancellationToken)
@@ -136,7 +138,14 @@ namespace Microsoft.VisualStudio.Platform
             var handler = _highlightingStateChanged;
             if (handler != null)
             {
+                int startLineIndex = this.textDocument.OffsetToLineNumber (args.ChangeSpan.Start);
+                int endLineIndex = this.textDocument.OffsetToLineNumber (args.ChangeSpan.End);
 
+                IEnumerable<IDocumentLine> documentLines = this.textDocument.GetLinesBetween (startLineIndex, endLineIndex);
+                foreach(IDocumentLine documentLine in documentLines)
+                {
+                    handler(this, new LineEventArgs(documentLine));
+                }
             }
         }
 
@@ -222,7 +231,12 @@ namespace Microsoft.VisualStudio.Platform
                     break;
 
                 default:
-                    styleName = EditorThemeColors.Foreground;
+                    // If the stylename looks like a textmate style, just use it
+                    if (classificationType.Classification.IndexOf('.') >= 0)
+                    {
+                        styleName = classificationType.Classification;
+                    }
+
                     break;
             }
 
