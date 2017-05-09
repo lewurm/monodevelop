@@ -17,7 +17,7 @@ DEP[0]=md-addins
 DEP_NAME[0]=MDADDINS
 DEP_PATH[0]=${top_srcdir}/../md-addins
 DEP_MODULE[0]=git@github.com:xamarin/md-addins.git
-DEP_NEEDED_VERSION[0]=abe0a65e5bc6e9a1b761cb0ef6f73bb1023bdcda
+DEP_NEEDED_VERSION[0]=34c4eceb232b3cb33e332405a49e3795894a5c9b
 DEP_BRANCH_AND_REMOTE[0]="new-signing-panel origin/new-signing-panel"
 
 # heap-shot
