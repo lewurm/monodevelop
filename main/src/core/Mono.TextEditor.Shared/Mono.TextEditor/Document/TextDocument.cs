@@ -45,7 +45,7 @@ using Microsoft.VisualStudio.Text.Tagging;
 
 namespace Mono.TextEditor
 {
-	class TextDocument : ITextDocument
+	class TextDocument : ITextDocument, IDisposable
 	{
 		public Microsoft.VisualStudio.Text.ITextDocument VsTextDocument { get; }
 		public Microsoft.VisualStudio.Text.ITextBuffer TextBuffer { get { return this.VsTextDocument.TextBuffer; } }
@@ -132,8 +132,10 @@ namespace Mono.TextEditor
 				ISyntaxHighlighting old;
 				lock (syncObject) {
 					old = syntaxMode;
-					if (old != null && old != DefaultSyntaxHighlighting.Instance)
+					if (old != null && old != DefaultSyntaxHighlighting.Instance) {
 						old.HighlightingStateChanged -= SyntaxMode_HighlightingStateChanged;
+						old.Dispose ();
+					}
 
 					syntaxMode = value;
 					if (syntaxMode != null && syntaxMode != DefaultSyntaxHighlighting.Instance)
@@ -218,6 +220,15 @@ namespace Mono.TextEditor
 			TextChanging += HandleSplitterLineSegmentTreeLineRemoved;
 			foldSegmentTree.tree.NodeRemoved += HandleFoldSegmentTreetreeNodeRemoved;
 			this.diffTracker.SetTrackDocument(this);
+		}
+
+		public void Dispose()
+		{
+			this.TextBuffer.Changed -= this.OnTextBufferChanged;
+			this.TextBuffer.ContentTypeChanged -= this.OnTextBufferContentTypeChanged;
+			this.TextBuffer.Properties.RemoveProperty(typeof(ITextDocument));
+			this.VsTextDocument.FileActionOccurred -= this.OnTextDocumentFileActionOccured;
+			SyntaxMode = null;
 		}
 
 		void OnTextBufferChanged(object sender, Microsoft.VisualStudio.Text.TextContentChangedEventArgs args)
@@ -1742,7 +1753,8 @@ namespace Mono.TextEditor
 
 		void HandleSplitterLineSegmentTreeLineRemoved (object sender, TextChangeEventArgs e)
 		{
-			foreach (var change in e.TextChanges) { 
+			for (int i = 0; i < e.TextChanges.Count; ++i) {
+				var change = e.TextChanges[i];
 				var line = GetLineByOffset (change.Offset);
 				if (line == null)
 					continue;
@@ -2240,12 +2252,12 @@ namespace Mono.TextEditor
 
 			public int LineCount { get { return this.Span.Snapshot.LineCount; } }
 
-			public int LocationToOffset(int line, int column)
+			public int LocationToOffset (int line, int column)
 			{
 				if (line > this.LineCount || line < DocumentLocation.MinLine)
 					return -1;
-				IDocumentLine documentLine = GetLineByOffset(line);
-				return System.Math.Min(Length, documentLine.Offset + System.Math.Max(0, System.Math.Min(documentLine.Length, column - 1)));
+				IDocumentLine documentLine = GetLine (line);
+				return System.Math.Min (Length, documentLine.Offset + System.Math.Max (0, System.Math.Min (documentLine.Length, column - 1)));
 			}
 
 			public DocumentLocation OffsetToLocation(int offset)
