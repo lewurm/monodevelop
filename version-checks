@@ -17,7 +17,7 @@ DEP[0]=md-addins
 DEP_NAME[0]=MDADDINS
 DEP_PATH[0]=${top_srcdir}/../md-addins
 DEP_MODULE[0]=git@github.com:xamarin/md-addins.git
-DEP_NEEDED_VERSION[0]=f9cb8891e2303ad0e10188163c225c24e995e805
+DEP_NEEDED_VERSION[0]=e2baaa30525134d79a087ae537c583778fdf4d6d
 DEP_BRANCH_AND_REMOTE[0]="d15-2-adnroid-sdk-manager-standalone origin/d15-2-adnroid-sdk-manager-standalone"
  
 # heap-shot
